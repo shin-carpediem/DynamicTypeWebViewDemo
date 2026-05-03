@@ -2,6 +2,8 @@
 
 iOS の **Dynamic Type** を WKWebView 上でも正しくスケールさせる方法を示すデモアプリです。
 
+<img width="350" alt="Simulator Screenshot - iPhone 17e - 2026-05-03 at 12 59 37" src="https://github.com/user-attachments/assets/ba6b57ff-4ac7-40c5-af63-4bd6fae6c386" />
+
 ## 概要
 
 ネイティブ SwiftUI コンポーネントは Dynamic Type に自動対応しますが、WebView 内の HTML/CSS はデフォルトでは追従しません。  
