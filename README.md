@@ -49,15 +49,6 @@ NotificationCenter.default.addObserver(
 
 `UIContentSizeCategory.didChangeNotification` を受信したら WebView をリロードし、CSS を再評価させます。
 
-## デモ画面の構成
-
-| セクション | 内容 |
-|---|---|
-| ステータスバー | 現在の Dynamic Type サイズ名を表示（SwiftUI） |
-| ✅ 対応済み | `em` 単位で指定したテキスト。Dynamic Type 変更に連動してスケール |
-| ❌ 未対応 | `px` 固定のテキスト。Dynamic Type を変更してもサイズが変わらない |
-| 実装コード | CSS のポイントをシンタックスハイライト付きで表示 |
-
 ## 動作確認方法
 
 1. Xcode でプロジェクトを開いてシミュレーターまたは実機で起動
@@ -69,13 +60,3 @@ NotificationCenter.default.addObserver(
 - iOS 16.0+
 - Xcode 15+
 - Swift 5.9+
-
-## ファイル構成
-
-```
-DynamicTypeWebViewDemo/
-├── DynamicTypeWebViewDemoApp.swift   # エントリーポイント
-├── ContentView.swift                 # ステータスバー + WebView のレイアウト
-├── WebViewContainer.swift            # WKWebView ラッパー / Dynamic Type 変更検知
-└── demo.html                         # em vs px を比較するデモページ
-```
