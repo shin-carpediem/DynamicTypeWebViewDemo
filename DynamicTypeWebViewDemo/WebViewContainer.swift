@@ -2,10 +2,7 @@ import SwiftUI
 import WebKit
 
 struct WebViewContainer: UIViewRepresentable {
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
+    func makeCoordinator() -> Coordinator { .init() }
 
     func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView()

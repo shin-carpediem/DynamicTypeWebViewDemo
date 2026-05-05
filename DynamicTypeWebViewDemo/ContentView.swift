@@ -40,7 +40,7 @@ struct ContentView: View {
     }
 }
 
-extension DynamicTypeSize {
+private extension DynamicTypeSize {
     var displayName: String {
         switch self {
         case .xSmall:       return "XSmall"
