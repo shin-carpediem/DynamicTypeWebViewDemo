@@ -153,6 +153,29 @@
             line-height: 1.5;
         }
 
+        /* ===== ✅ 対応済み（% 単位）===== */
+        .percent-section .section-label { color: #ff9500; }
+        .percent-badge { background: #ff9500; color: white; }
+        .percent-card { background: #fff8f0; }
+
+        /*
+         * % 指定は親要素の font-size を基準にスケールする。
+         * :root → body → 各要素とカスケードするため、
+         * :root の font-size が変われば連動してスケールする。
+         */
+        .percent-title {
+            font-size: 120%;   /* 親要素の 120% */
+            font-weight: 600;
+            margin: 0 0 0.25em;
+        }
+
+        .percent-description {
+            font-size: 85%;    /* 親要素の 85% */
+            color: #6e6e73;
+            margin: 0;
+            line-height: 1.5;
+        }
+
         /* ===== ❌ 未対応（px 固定）===== */
         .bad-section .section-label { color: #ff3b30; }
         .bad-badge { background: #ff3b30; color: white; }
@@ -353,6 +376,28 @@
                 <p class="good-description">
                     Swift 側で注入する値を変えれば、上限キャップや独自の刻み幅など
                     Apple のスケールに縛られない制御が可能です。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="percent-section">
+        <div class="section-label">✅ 対応済み — % 単位で指定</div>
+        <div class="card-list">
+            <div class="card percent-card">
+                <span class="badge percent-badge">GOOD</span>
+                <div class="percent-title">お知らせ：新機能がリリースされました</div>
+                <p class="percent-description">
+                    <strong>% 単位</strong> で指定。親要素の <code>font-size</code> に対する割合で決まるため、
+                    <code>:root</code> が変われば連動してスケールします。タイトル <code>120%</code>、本文 <code>85%</code>。
+                </p>
+            </div>
+            <div class="card percent-card">
+                <span class="badge percent-badge">GOOD</span>
+                <div class="percent-title">em との違い</div>
+                <p class="percent-description">
+                    <code>em</code> と挙動は同じですが、値が割合（100% = 1em）で表現されます。
+                    ネストが深い場合は親要素のサイズが累積されるため注意が必要です。
                 </p>
             </div>
         </div>
