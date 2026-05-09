@@ -2,7 +2,7 @@
 
 iOS の **Dynamic Type** を WKWebView 上でも正しくスケールさせる方法を示すデモアプリです。
 
-<img width="350" alt="Simulator Screenshot - iPhone 17e - 2026-05-03 at 12 59 37" src="https://github.com/user-attachments/assets/e233e997-03bc-4a0c-9b25-7eeba180ef12" />
+<img width="350" alt="Simulator Screenshot - iPhone 17e - 2026-05-09 at 14 35 23" src="https://github.com/user-attachments/assets/62114729-7208-4a38-8f5d-b4616ed9c729" />
 <br/><br/>
 
 👇からTestFlight版をインストールできます。<br/>
