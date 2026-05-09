@@ -6,21 +6,17 @@
     <title>Dynamic Type Demo</title>
     <style>
         /*
-         * ポイント①: :root と body の両方に font: -apple-system-body を指定
-         * :root（html）に指定することで rem のベースも Dynamic Type に追従する
+         * evaluateJavaScript で :root の font-size を Swift から直接上書きする。
+         * em / rem 指定の要素がここを起点にスケールする。
+         * フォールバックとして標準サイズ（17px）を指定しておく。
          */
         :root {
-            font: -apple-system-body;
-            /*
-             * 現代のブラウザでは
-             * 100% と同じ挙動になるものも多いが、
-             * none は 仕様上は非推奨で動作が保証されない
-             */
+            font-size: 17px;
             -webkit-text-size-adjust: 100%;
         }
 
         body {
-            font: -apple-system-body;
+            font-family: -apple-system, sans-serif;
             -webkit-text-size-adjust: 100%;
             margin: 0;
             padding: 0 0 48px;
@@ -200,138 +196,215 @@
         .c-val-good { color: #a8ff78; }
         .c-val-bad  { color: #ff5f56; }
         .c-val      { color: #e6db74; }
+        .c-keyword  { color: #ff79c6; }
+        .c-type     { color: #8be9fd; }
+        .c-string   { color: #f1fa8c; }
+        .c-method   { color: #50fa7b; }
+
+        /* ===== フロー図 ===== */
+        .flow {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75em;
+            padding: 0.75em 1em;
+            border-bottom: 1px solid #f2f2f7;
+        }
+
+        .flow-step:last-child { border-bottom: none; }
+
+        .flow-num {
+            width: 1.6em;
+            height: 1.6em;
+            border-radius: 50%;
+            background: #007aff;
+            color: white;
+            font-size: 0.786em;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 0.1em;
+        }
+
+        .flow-text {
+            font-size: 0.857em;
+            line-height: 1.6;
+            color: #1c1c1e;
+        }
+
+        .flow-text code {
+            background: #f2f2f7;
+            padding: 0.1em 0.4em;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Menlo', monospace;
+            font-size: 0.9em;
+        }
+
+        /* ===== 参考セクション ===== */
+        .ref-section .section-label { color: #8e8e93; }
+        .ref-badge { background: #8e8e93; color: white; }
+        .ref-card { background: #fafafa; }
     </style>
 </head>
 <body>
 
     <div class="page-header">
-        <h1>Dynamic Type × WebView</h1>
+        <h1>evaluateJavaScript 方式 × Dynamic Type</h1>
         <p>
-            OSの「設定 → アクセシビリティ → 画面表示とテキストサイズ → さらに大きな文字」でフォントサイズを変更すると、
-            アプリがリロードを検知してこのページに反映されます。
+            Swift 側で body フォントサイズを取得し、<code>evaluateJavaScript</code> で
+            <code>:root</code> の <code>font-size</code> を直接書き換える方式です。
+            リロード不要で、独自のスケール値も設定できます。
         </p>
     </div>
 
-    <!-- 現在のフォントサイズ -->
+    <!-- インジケーター -->
     <div class="font-size-indicator">
         <span class="icon">🔤</span>
-        <span class="label">body フォントサイズ（em / rem のベース）</span>
-        <span class="value" id="font-size-value">---</span>
-    </div>
-    <div class="font-size-indicator" style="margin-top: -0.25em;">
-        <span class="icon">🌐</span>
-        <span class="label">html ルートフォントサイズ（rem のベース）</span>
+        <span class="label">:root font-size（Swift から JS で注入した値）</span>
         <span class="value" id="root-font-size-value">---</span>
     </div>
+    <div class="font-size-indicator" style="margin-top: -0.25em;">
+        <span class="icon">🔄</span>
+        <span class="label">Dynamic Type 変更回数（リロードなしで即時反映）</span>
+        <span class="value" id="change-count-value">---</span>
+    </div>
 
-    <!-- ✅ 対応済み -->
+    <!-- 動作の仕組み -->
+    <section>
+        <div class="section-label">動作の仕組み</div>
+        <div class="flow">
+            <div class="flow-step">
+                <div class="flow-num">1</div>
+                <div class="flow-text">
+                    ユーザーが「設定 → アクセシビリティ → さらに大きな文字」を変更する
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-num">2</div>
+                <div class="flow-text">
+                    Swift 側で <code>UIContentSizeCategory.didChangeNotification</code> を受信する
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-num">3</div>
+                <div class="flow-text">
+                    <code>UIFont.preferredFont(forTextStyle: .body).pointSize</code> で現在のサイズを取得する
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-num">4</div>
+                <div class="flow-text">
+                    <code>evaluateJavaScript</code> で <code>document.documentElement.style.fontSize</code> を書き換える
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-num">5</div>
+                <div class="flow-text">
+                    <code>rem</code> 指定の要素が <code>:root</code> のサイズを起点にスケールする（リロードなし）
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Swift 実装 -->
+    <section>
+        <div class="section-label">Swift 実装</div>
+        <div class="code-block">
+<pre><span class="c-keyword">@objc private func</span> <span class="c-method">dynamicTypeDidChange</span>() {
+    <span class="c-method">applyFontSize</span>()
+}
+
+<span class="c-keyword">func</span> <span class="c-method">webView</span>(<span class="c-keyword">_</span> webView: <span class="c-type">WKWebView</span>, didFinish navigation: <span class="c-type">WKNavigation</span>!) {
+    <span class="c-method">applyFontSize</span>() <span class="c-comment">// ページロード完了時にも適用</span>
+}
+
+<span class="c-keyword">private func</span> <span class="c-method">applyFontSize</span>() {
+    <span class="c-keyword">let</span> size = <span class="c-type">UIFont</span>.<span class="c-method">preferredFont</span>(forTextStyle: .body).pointSize
+    webView?.<span class="c-method">evaluateJavaScript</span>(
+        <span class="c-string">"document.documentElement.style.fontSize = '\(size)px'"</span>,
+        completionHandler: <span class="c-keyword">nil</span>
+    )
+}</pre>
+        </div>
+    </section>
+
+    <!-- コンテンツサンプル -->
     <section class="good-section">
-        <div class="section-label">✅ 対応済み — em 単位で指定</div>
+        <div class="section-label">✅ 対応済み — rem 単位で指定</div>
         <div class="card-list">
             <div class="card">
                 <span class="badge good-badge">GOOD</span>
                 <div class="good-title">お知らせ：新機能がリリースされました</div>
                 <p class="good-description">
-                    このテキストは <strong>em 単位</strong> で指定しています。body の <code>-apple-system-body</code> を起点に、
-                    ダイナミックタイプの変更に連動してスケールします。
+                    <strong>rem 単位</strong> で指定。Swift が <code>:root</code> の <code>font-size</code> を書き換えるため、
+                    リロードなしでスケールします。タイトル <code>1.143rem</code>、本文 <code>0.857rem</code>。
                 </p>
             </div>
             <div class="card">
                 <span class="badge good-badge">GOOD</span>
-                <div class="good-title">アクセシビリティ対応のコンテンツ</div>
+                <div class="good-title">独自スケールにも対応</div>
                 <p class="good-description">
-                    タイトル: <code>font-size: 1.143em</code>（≈16px）、説明文: <code>font-size: 0.857em</code>（≈12px）。
-                    em により body のサイズ変化に追従します。
+                    Swift 側で注入する値を変えれば、上限キャップや独自の刻み幅など
+                    Apple のスケールに縛られない制御が可能です。
                 </p>
             </div>
         </div>
     </section>
 
-    <!-- ✅ rem + :root 指定 -->
-    <section class="rem-section">
-        <div class="section-label">✅ 対応済み — rem + :root 指定</div>
-        <div class="card-list">
-            <div class="card rem-card">
-                <span class="badge rem-badge">REM</span>
-                <div class="rem-title">お知らせ：新機能がリリースされました</div>
-                <p class="rem-description">
-                    このテキストは <strong>rem 単位</strong> で指定しています。<code>:root { font: -apple-system-body }</code> を追加することで
-                    html のサイズも Dynamic Type に追従し、rem もスケールします。
-                </p>
-            </div>
-            <div class="card rem-card">
-                <span class="badge rem-badge">REM</span>
-                <div class="rem-title">:root に指定するのがポイント</div>
-                <p class="rem-description">
-                    タイトル: <code>font-size: 1.143rem</code>、説明文: <code>font-size: 0.857rem</code>。
-                    上の html ルートフォントサイズが em セクションの body サイズと同じ値になっていれば、
-                    rem が正しく追従している証拠です。
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <!-- ❌ 未対応 -->
     <section class="bad-section">
-        <div class="section-label">❌ 未対応 — px を固定指定</div>
+        <div class="section-label">❌ 未対応 — px 固定指定</div>
         <div class="card-list">
             <div class="card bad-card">
                 <span class="badge bad-badge">BAD</span>
-                <div class="bad-title">お知らせ：新機能がリリースされました</div>
+                <div class="bad-title">:root が変わってもスケールしない</div>
                 <p class="bad-description">
-                    このテキストは <strong>px 固定</strong>（16px / 12px）です。上のセクションと比べてください。
-                    ダイナミックタイプを変更してもサイズが変わりません。
-                </p>
-            </div>
-            <div class="card bad-card">
-                <span class="badge bad-badge">BAD</span>
-                <div class="bad-title">アクセシビリティに非対応のコンテンツ</div>
-                <p class="bad-description">
-                    文字サイズを大きく設定しているユーザー（約 25〜35%）にとって、
-                    このテキストは読みにくいままです。
+                    <strong>px 固定</strong>（16px / 12px）のため、Swift が <code>:root</code> を書き換えても
+                    このテキストは変化しません。上の rem セクションと比較してください。
                 </p>
             </div>
         </div>
     </section>
 
-    <!-- 実装コード -->
-    <section>
-        <div class="section-label">実装のポイント（CSS）</div>
-        <div class="code-block">
-<pre><span class="c-comment">/* ① :root と body の両方に -apple-system-body を指定 */</span>
-<span class="c-selector">:root</span> {
-  <span class="c-prop">font</span>: <span class="c-val-good">-apple-system-body</span>; <span class="c-comment">/* ✅ rem のベース（html）も追従 */</span>
-}
-<span class="c-selector">body</span> {
-  <span class="c-prop">font</span>: <span class="c-val-good">-apple-system-body</span>; <span class="c-comment">/* ✅ em のベース（body）も追従 */</span>
-}
+    <!-- 参考: font: -apple-system-body + reload -->
+    <section class="ref-section">
+        <div class="section-label">参考 — より楽な代替案: font: -apple-system-body + reload()</div>
+        <div class="card-list">
+            <div class="card ref-card">
+                <span class="badge ref-badge">参考</span>
+                <div class="good-title" style="font-size: 1rem;">CSS だけで Dynamic Type に追従させる方法</div>
+                <p class="good-description">
+                    <code>:root</code> と <code>body</code> に <code>font: -apple-system-body</code> を指定し、
+                    通知受信時に <code>webView.reload()</code> を呼ぶだけで同様の効果が得られます。
+                    実装はシンプルですが、リロードが発生する点と Apple のスケールに固定される点が
+                    <code>evaluateJavaScript</code> 方式との違いです。
+                </p>
+            </div>
+        </div>
+        <div class="code-block" style="margin-top: 0.75em;">
+<pre><span class="c-comment">/* CSS: -apple-system-body を指定するだけでよい */</span>
+<span class="c-selector">:root</span>, <span class="c-selector">body</span> { <span class="c-prop">font</span>: <span class="c-val-good">-apple-system-body</span>; }
 
-<span class="c-comment">/* ✅ em — body 基準、Dynamic Type に追従 */</span>
-<span class="c-selector">.em-title</span> {
-  <span class="c-prop">font-size</span>: <span class="c-val-good">1.143em</span>; <span class="c-comment">/* ✅ スケールする */</span>
-}
-
-<span class="c-comment">/* ✅ rem — :root 指定により Dynamic Type に追従 */</span>
-<span class="c-selector">.rem-title</span> {
-  <span class="c-prop">font-size</span>: <span class="c-val-good">1.143rem</span>; <span class="c-comment">/* ✅ :root 指定でスケールする */</span>
-}
-
-<span class="c-comment">/* ❌ px 固定はスケールしない */</span>
-<span class="c-bad-sel">.bad-title</span> {
-  <span class="c-prop">font-size</span>: <span class="c-val-bad">16px</span>; <span class="c-comment">/* ❌ 変化しない */</span>
+<span class="c-comment">// Swift: リロードで CSS を再評価させる</span>
+<span class="c-string">@objc</span> <span class="c-keyword">private func</span> <span class="c-method">dynamicTypeDidChange</span>() {
+    webView?.<span class="c-method">reload</span>()
 }</pre>
         </div>
     </section>
 
     <script>
-        // body と html（ルート）の実際のフォントサイズを表示
-        function updateFontSizeDisplay() {
-            const bodySize = parseFloat(window.getComputedStyle(document.body).fontSize);
-            const rootSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize);
-            document.getElementById('font-size-value').textContent = bodySize.toFixed(1) + 'px';
-            document.getElementById('root-font-size-value').textContent = rootSize.toFixed(1) + 'px';
-        }
-        updateFontSizeDisplay();
+        // Swift の evaluateJavaScript が didFinish 後に実行されるため、
+        // JS 側でインジケーターの初期値だけ設定しておく
+        var rootEl = document.getElementById('root-font-size-value');
+        if (rootEl) rootEl.textContent = '（取得中...）';
+        var countEl = document.getElementById('change-count-value');
+        if (countEl) countEl.textContent = '（取得中...）';
     </script>
 </body>
 </html>

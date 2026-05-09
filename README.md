@@ -17,28 +17,7 @@ https://testflight.apple.com/join/HZCGWkfa
 
 ## 実装のポイント
 
-### ① CSS: `body` に `-apple-system-body` を指定
-
-```css
-body {
-  font: -apple-system-body; /* iOS WebKit が Dynamic Type サイズを body に反映 */
-}
-```
-
-これだけで iOS WebKit が Dynamic Type の設定値を `body` のフォントサイズに反映します。
-
-### ② CSS: `font-size` は `em` 単位で指定
-
-```css
-.title       { font-size: 1.143em; } /* ✅ body 基準でスケールする */
-.description { font-size: 0.857em; } /* ✅ body 基準でスケールする */
-
-.bad-title   { font-size: 16px; }    /* ❌ 固定値のためスケールしない */
-```
-
-`px` 固定ではなく `em` を使うことで、`body` のサイズ変化に追従します。
-
-### ③ Swift: Dynamic Type 変更を検知して WebView をリロード
+### ① Swift: Dynamic Type 変更を検知してフォントサイズを JS で注入
 
 ```swift
 NotificationCenter.default.addObserver(
@@ -49,17 +28,62 @@ NotificationCenter.default.addObserver(
 )
 
 @objc private func dynamicTypeDidChange() {
-    webView?.reload() // リロード後、CSS が新しいサイズで再評価される
+    applyFontSize()
+}
+
+func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    applyFontSize() // ページロード完了時にも適用
+}
+
+private func applyFontSize() {
+    let size = UIFont.preferredFont(forTextStyle: .body).pointSize
+    webView?.evaluateJavaScript(
+        "document.documentElement.style.fontSize = '\(size)px'",
+        completionHandler: nil
+    )
 }
 ```
 
-`UIContentSizeCategory.didChangeNotification` を受信したら WebView をリロードし、CSS を再評価させます。
+`UIContentSizeCategory.didChangeNotification` を受信したら、Swift 側で body サイズを取得し `evaluateJavaScript` で `:root` の `font-size` を直接書き換えます。  
+リロードが不要なため即時反映され、注入する値を変えれば独自のスケール（上限キャップなど）にも対応できます。
+
+### ② CSS: `font-size` は `rem` 単位で指定
+
+```css
+:root {
+  font-size: 17px; /* フォールバック。Swift が evaluateJavaScript で上書きする */
+}
+
+.title       { font-size: 1.143rem; } /* ✅ :root 基準でスケールする */
+.description { font-size: 0.857rem; } /* ✅ :root 基準でスケールする */
+
+.bad-title   { font-size: 16px; }     /* ❌ 固定値のためスケールしない */
+```
+
+Swift が `:root` の `font-size` を書き換えるため、`rem` 指定の要素がすべて連動してスケールします。
 
 ## 動作確認方法
 
 1. Xcode でプロジェクトを開いてシミュレーターまたは実機で起動
 2. **設定 → アクセシビリティ → 画面表示とテキストサイズ → さらに大きな文字** でフォントサイズを変更
-3. アプリに戻ると WebView がリロードされ、`em` 指定のテキストのみサイズが変化することを確認できる
+3. アプリに戻ると（リロードなしで）`rem` 指定のテキストのみサイズが変化することを確認できる
+
+## 参考: より楽な代替案
+
+`font: -apple-system-body` を CSS に指定し、通知受信時に `webView.reload()` を呼ぶだけでも同様の効果が得られます。  
+実装はシンプルですが、**リロードが発生する**点と **Apple のスケールに固定される**点が `evaluateJavaScript` 方式との違いです。
+
+```css
+/* CSS: -apple-system-body を指定するだけでよい */
+:root, body { font: -apple-system-body; }
+```
+
+```swift
+// Swift: リロードで CSS を再評価させる
+@objc private func dynamicTypeDidChange() {
+    webView?.reload()
+}
+```
 
 ## 動作環境
 

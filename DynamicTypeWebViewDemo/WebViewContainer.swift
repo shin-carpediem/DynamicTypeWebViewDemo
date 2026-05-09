@@ -17,7 +17,6 @@ struct WebViewContainer: UIViewRepresentable {
 
     private func loadPage(in webView: WKWebView) {
         guard let url = Bundle.main.url(forResource: "demo", withExtension: "html") else { return }
-        // allowingReadAccessTo でローカルCSSなども読み込み可能にする
         webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
     }
 
@@ -25,10 +24,10 @@ struct WebViewContainer: UIViewRepresentable {
 
     class Coordinator: NSObject, WKNavigationDelegate {
         weak var webView: WKWebView?
+        private var changeCount = 0
 
         override init() {
             super.init()
-            // ダイナミックタイプ変更を検知して WebView をリロードする
             NotificationCenter.default.addObserver(
                 self,
                 selector: #selector(dynamicTypeDidChange),
@@ -42,8 +41,27 @@ struct WebViewContainer: UIViewRepresentable {
         }
 
         @objc private func dynamicTypeDidChange() {
-            // リロード後、CSSの font: -apple-system-body が新しいサイズで再評価される
-            webView?.reload()
+            changeCount += 1
+            applyFontSize()
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            applyFontSize()
+        }
+
+        // Swift 側で body サイズを取得し、JS で :root の font-size を上書きする。
+        // CSS の em / rem 指定が root のサイズを起点にスケールする。
+        private func applyFontSize() {
+            let size = UIFont.preferredFont(forTextStyle: .body).pointSize
+            let countText = changeCount == 0 ? "0（まだ変更なし）" : String(changeCount)
+            let js = """
+            document.documentElement.style.fontSize = '\(size)px';
+            var rootEl = document.getElementById('root-font-size-value');
+            if (rootEl) rootEl.textContent = '\(size)px';
+            var countEl = document.getElementById('change-count-value');
+            if (countEl) countEl.textContent = '\(countText)';
+            """
+            webView?.evaluateJavaScript(js, completionHandler: nil)
         }
     }
 }
