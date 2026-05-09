@@ -6,9 +6,13 @@
     <title>Dynamic Type Demo</title>
     <style>
         /*
-         * ポイント①: body に font: -apple-system-body を指定
-         * これだけで iOS WebKit が Dynamic Type のサイズ変化を body に反映する
+         * ポイント①: :root と body の両方に font: -apple-system-body を指定
+         * :root（html）に指定することで rem のベースも Dynamic Type に追従する
          */
+        :root {
+            font: -apple-system-body;
+        }
+
         body {
             font: -apple-system-body;
             margin: 0;
@@ -113,10 +117,10 @@
         .good-section .section-label { color: #34c759; }
         .good-badge { background: #34c759; color: white; }
 
-        /* ===== 🔬 実験中（rem 単位）===== */
-        .rem-section .section-label { color: #ff9500; }
-        .rem-badge { background: #ff9500; color: white; }
-        .rem-card { background: #fffaf0; }
+        /* ===== ✅ 対応済み（rem + :root 指定）===== */
+        .rem-section .section-label { color: #5856d6; }
+        .rem-badge { background: #5856d6; color: white; }
+        .rem-card { background: #f5f4ff; }
 
         /*
          * ポイント②: font-size は em を使う（body を基準とした相対値）
@@ -136,10 +140,8 @@
         }
 
         /*
-         * 🔬 rem: html ルート要素を基準とした相対値
-         * body に -apple-system-body を指定しても、
-         * html（ルート）のサイズは変わらないため
-         * rem は Dynamic Type に追従しない可能性がある
+         * ✅ rem + :root 指定: html ルート要素にも -apple-system-body を当てることで
+         * rem も Dynamic Type に追従するようになる
          */
         .rem-title {
             font-size: 1.143rem;   /* html ルート基準 */
@@ -244,25 +246,25 @@
         </div>
     </section>
 
-    <!-- 🔬 実験中 -->
+    <!-- ✅ rem + :root 指定 -->
     <section class="rem-section">
-        <div class="section-label">🔬 実験中 — rem 単位で指定</div>
+        <div class="section-label">✅ 対応済み — rem + :root 指定</div>
         <div class="card-list">
             <div class="card rem-card">
                 <span class="badge rem-badge">REM</span>
                 <div class="rem-title">お知らせ：新機能がリリースされました</div>
                 <p class="rem-description">
-                    このテキストは <strong>rem 単位</strong> で指定しています。rem は <code>html</code>（ルート）要素を基準にします。
-                    上の em セクションと見比べてスケールの違いを確認してください。
+                    このテキストは <strong>rem 単位</strong> で指定しています。<code>:root { font: -apple-system-body }</code> を追加することで
+                    html のサイズも Dynamic Type に追従し、rem もスケールします。
                 </p>
             </div>
             <div class="card rem-card">
                 <span class="badge rem-badge">REM</span>
-                <div class="rem-title">html ルートサイズが rem の基準</div>
+                <div class="rem-title">:root に指定するのがポイント</div>
                 <p class="rem-description">
                     タイトル: <code>font-size: 1.143rem</code>、説明文: <code>font-size: 0.857rem</code>。
-                    body に <code>-apple-system-body</code> を設定しても html のサイズは変わらないため、
-                    Dynamic Type に追従するかどうかを実際に検証できます。
+                    上の html ルートフォントサイズが em セクションの body サイズと同じ値になっていれば、
+                    rem が正しく追従している証拠です。
                 </p>
             </div>
         </div>
@@ -295,33 +297,27 @@
     <section>
         <div class="section-label">実装のポイント（CSS）</div>
         <div class="code-block">
-<pre><span class="c-comment">/* ① body に -apple-system-body を指定 */</span>
+<pre><span class="c-comment">/* ① :root と body の両方に -apple-system-body を指定 */</span>
+<span class="c-selector">:root</span> {
+  <span class="c-prop">font</span>: <span class="c-val-good">-apple-system-body</span>; <span class="c-comment">/* ✅ rem のベース（html）も追従 */</span>
+}
 <span class="c-selector">body</span> {
-  <span class="c-prop">font</span>: <span class="c-val-good">-apple-system-body</span>; <span class="c-comment">/* ✅ iOS Dynamic Type に opt-in */</span>
+  <span class="c-prop">font</span>: <span class="c-val-good">-apple-system-body</span>; <span class="c-comment">/* ✅ em のベース（body）も追従 */</span>
 }
 
-<span class="c-comment">/* ✅ em — body 基準の相対値、Dynamic Type に追従 */</span>
+<span class="c-comment">/* ✅ em — body 基準、Dynamic Type に追従 */</span>
 <span class="c-selector">.em-title</span> {
-  <span class="c-prop">font-size</span>: <span class="c-val-good">1.143em</span>; <span class="c-comment">/* ✅ body が変われば連動 */</span>
-}
-<span class="c-selector">.em-description</span> {
-  <span class="c-prop">font-size</span>: <span class="c-val-good">0.857em</span>; <span class="c-comment">/* ✅ スケールする */</span>
+  <span class="c-prop">font-size</span>: <span class="c-val-good">1.143em</span>; <span class="c-comment">/* ✅ スケールする */</span>
 }
 
-<span class="c-comment">/* 🔬 rem — html ルート基準、追従するか実験中 */</span>
+<span class="c-comment">/* ✅ rem — :root 指定により Dynamic Type に追従 */</span>
 <span class="c-selector">.rem-title</span> {
-  <span class="c-prop">font-size</span>: <span class="c-val">1.143rem</span>; <span class="c-comment">/* 🔬 html サイズが変わるか？ */</span>
-}
-<span class="c-selector">.rem-description</span> {
-  <span class="c-prop">font-size</span>: <span class="c-val">0.857rem</span>; <span class="c-comment">/* 🔬 em との差を比較 */</span>
+  <span class="c-prop">font-size</span>: <span class="c-val-good">1.143rem</span>; <span class="c-comment">/* ✅ :root 指定でスケールする */</span>
 }
 
 <span class="c-comment">/* ❌ px 固定はスケールしない */</span>
 <span class="c-bad-sel">.bad-title</span> {
   <span class="c-prop">font-size</span>: <span class="c-val-bad">16px</span>; <span class="c-comment">/* ❌ 変化しない */</span>
-}
-<span class="c-bad-sel">.bad-description</span> {
-  <span class="c-prop">font-size</span>: <span class="c-val-bad">12px</span>; <span class="c-comment">/* ❌ 変化しない */</span>
 }</pre>
         </div>
     </section>
