@@ -113,6 +113,11 @@
         .good-section .section-label { color: #34c759; }
         .good-badge { background: #34c759; color: white; }
 
+        /* ===== 🔬 実験中（rem 単位）===== */
+        .rem-section .section-label { color: #ff9500; }
+        .rem-badge { background: #ff9500; color: white; }
+        .rem-card { background: #fffaf0; }
+
         /*
          * ポイント②: font-size は em を使う（body を基準とした相対値）
          * → body のサイズが変われば連動してスケールする
@@ -125,6 +130,25 @@
 
         .good-description {
             font-size: 0.857em;   /* ≈ 12px at standard size */
+            color: #6e6e73;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /*
+         * 🔬 rem: html ルート要素を基準とした相対値
+         * body に -apple-system-body を指定しても、
+         * html（ルート）のサイズは変わらないため
+         * rem は Dynamic Type に追従しない可能性がある
+         */
+        .rem-title {
+            font-size: 1.143rem;   /* html ルート基準 */
+            font-weight: 600;
+            margin: 0 0 0.25em;
+        }
+
+        .rem-description {
+            font-size: 0.857rem;   /* html ルート基準 */
             color: #6e6e73;
             margin: 0;
             line-height: 1.5;
@@ -188,8 +212,13 @@
     <!-- 現在のフォントサイズ -->
     <div class="font-size-indicator">
         <span class="icon">🔤</span>
-        <span class="label">WebView の body フォントサイズ（実測値）</span>
+        <span class="label">body フォントサイズ（em / rem のベース）</span>
         <span class="value" id="font-size-value">---</span>
+    </div>
+    <div class="font-size-indicator" style="margin-top: -0.25em;">
+        <span class="icon">🌐</span>
+        <span class="label">html ルートフォントサイズ（rem のベース）</span>
+        <span class="value" id="root-font-size-value">---</span>
     </div>
 
     <!-- ✅ 対応済み -->
@@ -210,6 +239,30 @@
                 <p class="good-description">
                     タイトル: <code>font-size: 1.143em</code>（≈16px）、説明文: <code>font-size: 0.857em</code>（≈12px）。
                     em により body のサイズ変化に追従します。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 🔬 実験中 -->
+    <section class="rem-section">
+        <div class="section-label">🔬 実験中 — rem 単位で指定</div>
+        <div class="card-list">
+            <div class="card rem-card">
+                <span class="badge rem-badge">REM</span>
+                <div class="rem-title">お知らせ：新機能がリリースされました</div>
+                <p class="rem-description">
+                    このテキストは <strong>rem 単位</strong> で指定しています。rem は <code>html</code>（ルート）要素を基準にします。
+                    上の em セクションと見比べてスケールの違いを確認してください。
+                </p>
+            </div>
+            <div class="card rem-card">
+                <span class="badge rem-badge">REM</span>
+                <div class="rem-title">html ルートサイズが rem の基準</div>
+                <p class="rem-description">
+                    タイトル: <code>font-size: 1.143rem</code>、説明文: <code>font-size: 0.857rem</code>。
+                    body に <code>-apple-system-body</code> を設定しても html のサイズは変わらないため、
+                    Dynamic Type に追従するかどうかを実際に検証できます。
                 </p>
             </div>
         </div>
@@ -247,12 +300,20 @@
   <span class="c-prop">font</span>: <span class="c-val-good">-apple-system-body</span>; <span class="c-comment">/* ✅ iOS Dynamic Type に opt-in */</span>
 }
 
-<span class="c-comment">/* ② font-size は em（body 基準の相対値）*/</span>
-<span class="c-selector">.title</span> {
-  <span class="c-prop">font-size</span>: <span class="c-val-good">1.143em</span>; <span class="c-comment">/* ✅ スケールする */</span>
+<span class="c-comment">/* ✅ em — body 基準の相対値、Dynamic Type に追従 */</span>
+<span class="c-selector">.em-title</span> {
+  <span class="c-prop">font-size</span>: <span class="c-val-good">1.143em</span>; <span class="c-comment">/* ✅ body が変われば連動 */</span>
 }
-<span class="c-selector">.description</span> {
+<span class="c-selector">.em-description</span> {
   <span class="c-prop">font-size</span>: <span class="c-val-good">0.857em</span>; <span class="c-comment">/* ✅ スケールする */</span>
+}
+
+<span class="c-comment">/* 🔬 rem — html ルート基準、追従するか実験中 */</span>
+<span class="c-selector">.rem-title</span> {
+  <span class="c-prop">font-size</span>: <span class="c-val">1.143rem</span>; <span class="c-comment">/* 🔬 html サイズが変わるか？ */</span>
+}
+<span class="c-selector">.rem-description</span> {
+  <span class="c-prop">font-size</span>: <span class="c-val">0.857rem</span>; <span class="c-comment">/* 🔬 em との差を比較 */</span>
 }
 
 <span class="c-comment">/* ❌ px 固定はスケールしない */</span>
@@ -266,10 +327,12 @@
     </section>
 
     <script>
-        // body の実際のフォントサイズを表示（Dynamic Type の値を可視化）
+        // body と html（ルート）の実際のフォントサイズを表示
         function updateFontSizeDisplay() {
-            const size = parseFloat(window.getComputedStyle(document.body).fontSize);
-            document.getElementById('font-size-value').textContent = size.toFixed(1) + 'px';
+            const bodySize = parseFloat(window.getComputedStyle(document.body).fontSize);
+            const rootSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize);
+            document.getElementById('font-size-value').textContent = bodySize.toFixed(1) + 'px';
+            document.getElementById('root-font-size-value').textContent = rootSize.toFixed(1) + 'px';
         }
         updateFontSizeDisplay();
     </script>
